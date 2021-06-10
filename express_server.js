@@ -67,6 +67,11 @@ app.get("/register", (req, res) => {
   res.render("urls_register", templateVars);
 });
 
+app.get("/login", (req, res) => {
+  const templateVars = { user: users[req.cookies.user_id] };
+  res.render("url_login", templateVars);
+});
+
 // create new user
 app.post("/register", (req, res) => {
   const userID = generateRandomString();
