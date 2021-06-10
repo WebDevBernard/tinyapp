@@ -67,17 +67,28 @@ app.get("/register", (req, res) => {
   res.render("urls_register", templateVars);
 });
 
+// create new user
 app.post("/register", (req, res) => {
   const userID = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
+
+  if (!email || !password) {
+    return res.status(400).send("Bad Request");
+  }
+  for (const user in users) {
+    if (users[user].email === email) {
+      return res.status(400).send("Bad Request");
+    }
+  }
   const newUser = users[userID] = {
     id: userID,
     email,
     password
   };
   users[userID] = newUser;
-  res.cookie("user_id", userID)
+  console.log(users);
+  res.cookie("user_id", userID);
   res.redirect('/urls');
 });
 
