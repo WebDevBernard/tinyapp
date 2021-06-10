@@ -31,7 +31,7 @@ app.use(cookieParser());
 
 app.get("/urls/new", (req, res) => {
   const templateVars = { user: users[req.cookies.user_id] };
-  res.render("/urls_new", templateVars);
+  res.render("urls_new", templateVars);
 });
 
 app.get("/", (req, res) => {
@@ -69,7 +69,7 @@ app.get("/register", (req, res) => {
 
 app.get("/login", (req, res) => {
   const templateVars = { user: users[req.cookies.user_id] };
-  res.render("url_login", templateVars);
+  res.render("urls_login", templateVars);
 });
 
 // create new user

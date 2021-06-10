@@ -17,8 +17,10 @@
       </form>
 
     <% } else { %>
-    <form method="POST" action= "/login" style="margin-left: auto">
-      <input name="username" placeholder="Username" style="width: 300px; margin: 1em">
+    <form method="GET" action= "/register" style="margin-left: auto">
+      <button type="submit" class="btn btn-outline-dark mr-1">Register</button>
+    </form>
+    <form method="GET" action= "/login">
       <button type="submit" class="btn btn-outline-dark">Login</button>
     </form>
     <% } %>
