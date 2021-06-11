@@ -8,13 +8,13 @@ const urlDatabase = {
 const users = {
   "userRandomID": {
     id: "userRandomID",
-    email: "user@example.com",
-    password: "purple-monkey-dinosaur"
+    email: "a@b.com",
+    password: "a"
   },
   "user2RandomID": {
     id: "user2RandomID",
-    email: "user2@example.com",
-    password: "dishwasher-funk"
+    email: "b@a.com",
+    password: "b"
   }
 };
 
@@ -116,9 +116,23 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const user = users[req.body.userID];
-  res.cookie("user_id", user);
-  res.redirect("/urls");
+  const email = req.body.email;
+  const password = req.body.password;
+  let foundUser;
+  for (const userID in users) {
+    const user = users[userID];
+    if (user.email === email) {
+      foundUser = user;
+    }
+  }
+  if (!foundUser) {
+    return res.status(403).send('could not find user');
+  }
+  if (foundUser.password !== password) {
+    return res.status(403).send('password is not correct');
+  }
+  res.cookie("user_id", foundUser.id);
+  res.redirect('/urls');
 });
 
 app.post("/logout", (req, res) => {
