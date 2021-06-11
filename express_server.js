@@ -6,16 +6,11 @@ const urlDatabase = {
   i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
 };
 const users = {
-  "userRandomID": {
-    id: "userRandomID",
+  "aJ48lW": {
+    id: "aJ48lW",
     email: "a@b.com",
     password: "a"
   },
-  "user2RandomID": {
-    id: "user2RandomID",
-    email: "b@a.com",
-    password: "b"
-  }
 };
 
 const cookieParser = require('cookie-parser');
@@ -109,8 +104,18 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  delete urlDatabase[req.params.shortURL];
-  res.redirect("/urls");
+  const shortURL = req.params.shortURL;
+  if (!req.cookies.user_id) {
+    return res.redirect("/login");
+  }
+  if (req.cookies.user_id === urlDatabase[shortURL].userID) {
+    console.log(urlDatabase[shortURL].userID);
+    console.log(req.cookies.user_id);
+    delete urlDatabase[shortURL];
+    return res.redirect("/urls");
+  } else {
+    return res.status("404").send('bad request');
+  }
 });
 
 app.post("/urls/:id", (req, res) => {
