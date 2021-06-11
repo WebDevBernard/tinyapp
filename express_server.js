@@ -18,6 +18,15 @@ const cookieParser = require('cookie-parser');
 const generateRandomString = () => {
   return Math.random().toString(36).substring(2, 8);
 };
+const urlsForUser = (id) => {
+  let userURLs = {};
+  for (const url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      userURLs[url] = urlDatabase[url];
+    }
+  }
+  return userURLs;
+};
 
 app.set("view engine", "ejs");
 
@@ -25,7 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { user: users[req.cookies.user_id] };
+  const templateVars = { user: users[req.cookies.user_id]};
   if (req.cookies.user_id) {
     res.render("urls_new", templateVars);
   } else {
@@ -46,7 +55,7 @@ app.get("/urls.json", (req, res) => {
 // });
 
 app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlDatabase, user: users[req.cookies.user_id] };
+  const templateVars = { urls: urlsForUser(req.cookies.user_id), user: users[req.cookies.user_id] };
   res.render("urls_index", templateVars);
 });
 
