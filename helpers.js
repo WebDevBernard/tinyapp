@@ -14,7 +14,7 @@ const urlsForUser = (urls, id) => {
   return userURLs;
 };
 
-// checks users.email to find if email exists
+// returns user id that matches email in users
 const getUserByEmail = function(users, email) {
   for (const user in users) {
     if (users[user].email === email) {
