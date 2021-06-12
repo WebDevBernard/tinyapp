@@ -3,10 +3,12 @@ const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
 const app = express();
 const PORT = 8080; // default port 8080
+const { generateRandomString, urlsForUser, getUserByEmail } = require("./helpers");
 const urlDatabase = {
   b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
   i3BoGr: { longURL: "https://www.google.ca", userID: "bJ48lW" }
 };
+
 const users = {
   "aJ48lW": {
     id: "aJ48lW",
@@ -20,36 +22,26 @@ const users = {
   }
 };
 
-//Generates 6 character random string
-const generateRandomString = () => {
-  return Math.random().toString(36).substring(2, 8);
-};
-const urlsForUser = (id) => {
-  let userURLs = {};
-  for (const url in urlDatabase) {
-    if (urlDatabase[url].userID === id) {
-      userURLs[url] = urlDatabase[url];
-    }
-  }
-  return userURLs;
-};
-const getUserByEmail = function(users, email) {
-  for (const user in users) {
-    if (users[user].email === email) {
-      return user;
-    }
-  }
-};
-
 app.set("view engine", "ejs");
 
-// middleware
+// *middleware*
 
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieSession({
   name: "session",
   keys: ["key1", "key2"],
 }));
+
+// *beginning of get requests*
+
+app.get("/", (req, res) => {
+  res.redirect("urls");
+});
+
+app.get("/urls", (req, res) => {
+  const templateVars = { urls: urlsForUser(urlDatabase, req.session.user_id), user: users[req.session.user_id] };
+  res.render("urls_index", templateVars);
+});
 
 app.get("/urls/new", (req, res) => {
   const templateVars = { user: users[req.session.user_id] };
@@ -60,17 +52,7 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
-// beginning of get requests
-
-app.get("/", (req, res) => {
-  res.redirect("urls");
-});
-
-app.get("/urls", (req, res) => {
-  const templateVars = { urls: urlsForUser(req.session.user_id), user: users[req.session.user_id] };
-  res.render("urls_index", templateVars);
-});
-
+// only users logged in can access short URLs
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   if (!urlDatabase[shortURL]) {
@@ -101,9 +83,9 @@ app.get("/login", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
-// beginning of post requests
+// *beginning of post requests*
 
-// create new user
+// creates new user
 app.post("/register", (req, res) => {
   const userID = generateRandomString();
   const email = req.body.email;
@@ -121,28 +103,23 @@ app.post("/register", (req, res) => {
     password: bcrypt.hashSync(password, 10)
   };
   users[userID] = newUser;
-  console.log(users);
   req.session.user_id = newUser.id;
   res.redirect("/urls");
 });
 
+// user login - match email and password to database
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  let foundUser;
-  for (const userID in users) {
-    const user = users[userID];
-    if (user.email === email) {
-      foundUser = user;
-    }
-  }
+  let foundUser = getUserByEmail(users, email);
+
   if (!foundUser) {
     return res.status(403).send("Email or password combination does not exist");
   }
-  if (!bcrypt.compareSync(password, foundUser.password)) {
-    return res.status(403).send("Password combination does not exist");
+  if (!bcrypt.compareSync(password, users[foundUser].password)) {
+    return res.status(403).send("Invalid Password");
   }
-  req.session.user_id = foundUser.id;
+  req.session.user_id = users[foundUser].id;
   res.redirect('/urls');
 });
 
@@ -157,6 +134,7 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls/");
 });
 
+// only users logged in can delete short URLs
 app.post("/urls/:shortURL/delete", (req, res) => {
   const shortURL = req.params.shortURL;
   if (!req.session.user_id) {
@@ -169,6 +147,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   return res.status("404").send('bad request');
 });
 
+// only users can see their own urls
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
   if (!req.session.user_id) {
