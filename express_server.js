@@ -1,4 +1,5 @@
 const express = require("express");
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
 const urlDatabase = {
@@ -13,7 +14,7 @@ const users = {
   },
   "bJ48lW": {
     id: "aJ48lW",
-    email: "a@b.com",
+    email: "b@c.com",
     password: "a"
   }
 };
@@ -31,6 +32,13 @@ const urlsForUser = (id) => {
     }
   }
   return userURLs;
+};
+const getUserByEmail = function(users, email) {
+  for (const user in users) {
+    if (users[user].email === email) {
+      return user;
+    }
+  }
 };
 
 app.set("view engine", "ejs");
@@ -69,7 +77,7 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.redirect("/login");
   }
   if (req.cookies.user_id === urlDatabase[shortURL].userID) {
-    const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.cookies.user_id]};
+    const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.cookies.user_id] };
     return res.render("urls_show", templateVars);
   }
   return res.status("404").send('bad request');
@@ -99,21 +107,44 @@ app.post("/register", (req, res) => {
   const password = req.body.password;
 
   if (!email || !password) {
-    return res.status(400).send("Bad Request");
+    return res.status(400).send("Email or password required");
   }
-  for (const user in users) {
-    if (users[user].email === email) {
-      return res.status(400).send("Bad Request");
-    }
+  if (getUserByEmail(users, email)) {
+    return res.status(400).send("Please use another email address");
   }
   const newUser = users[userID] = {
     id: userID,
-    email,
-    password
+    email: email,
+    password: bcrypt.hashSync(password, 10)
   };
   users[userID] = newUser;
   console.log(users);
   res.cookie("user_id", userID);
+  res.redirect("/urls");
+});
+
+app.post("/login", (req, res) => {
+  const email = req.body.email;
+  const password = req.body.password;
+  let foundUser;
+  for (const userID in users) {
+    const user = users[userID];
+    if (user.email === email) {
+      foundUser = user;
+    }
+  }
+  if (!foundUser) {
+    return res.status(403).send("Email or password combination does not exist");
+  }
+  if (!bcrypt.compareSync(password, foundUser.password)) {
+    return res.status(403).send("Password combination does not exist");
+  }
+  res.cookie("user_id", foundUser.id);
+  res.redirect('/urls');
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("user_id");
   res.redirect("/urls");
 });
 
@@ -130,7 +161,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
   if (req.cookies.user_id === urlDatabase[shortURL].userID) {
     delete urlDatabase[shortURL];
-    res.redirect("/urls");
+    return res.redirect("/urls");
   }
   return res.status("404").send('bad request');
 });
@@ -144,31 +175,6 @@ app.post("/urls/:id", (req, res) => {
     urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.cookies.user_id };
     return res.redirect("/urls");
   }
-});
-
-app.post("/login", (req, res) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  let foundUser;
-  for (const userID in users) {
-    const user = users[userID];
-    if (user.email === email) {
-      foundUser = user;
-    }
-  }
-  if (!foundUser) {
-    return res.status(403).send('could not find user');
-  }
-  if (foundUser.password !== password) {
-    return res.status(403).send('password is not correct');
-  }
-  res.cookie("user_id", foundUser.id);
-  res.redirect('/urls');
-});
-
-app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
-  res.redirect("/urls");
 });
 
 app.listen(PORT, () => {
