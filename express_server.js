@@ -71,7 +71,7 @@ app.get("/urls/:shortURL", (req, res) => {
     const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.session.user_id] };
     return res.render("urls_show", templateVars);
   }
-  return res.status("404").send("Bad Request");
+  return res.status("404").send("This URL does not belong to you");
 });
 
 app.get("/u/:shortURL", (req, res) => {
