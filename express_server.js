@@ -45,7 +45,7 @@ app.get("/urls", (req, res) => {
     const templateVars = { urls: urlsForUser(urlDatabase, req.session.user_id), user: users[req.session.user_id] };
     res.render("urls_index", templateVars);
   } else {
-    res.redirect("/login");
+    return res.status("401").send("Please login first");
   }
 });
 
@@ -65,7 +65,7 @@ app.get("/urls/:shortURL", (req, res) => {
     return res.redirect("/urls");
   }
   if (!req.session.user_id) {
-    return res.redirect("/login");
+    return res.status("401").send("Please login first");
   }
   if (req.session.user_id === urlDatabase[shortURL].userID) {
     const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.session.user_id] };
@@ -75,6 +75,9 @@ app.get("/urls/:shortURL", (req, res) => {
 });
 
 app.get("/u/:shortURL", (req, res) => {
+  if (!urlDatabase[req.params.shortURL]) {
+    return res.status("404").send("This URL does not exist");
+  }
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
 });
@@ -98,11 +101,17 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  }
   const templateVars = { user: users[req.session.user_id] };
   res.render("urls_login", templateVars);
 });
 
 app.get("/register", (req, res) => {
+  if (req.session.user_id) {
+    return res.redirect("/urls");
+  }
   const templateVars = { user: users[req.session.user_id] };
   res.render("urls_register", templateVars);
 });
