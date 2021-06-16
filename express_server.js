@@ -83,6 +83,9 @@ app.get("/u/:shortURL", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
+  if (!req.session.userID) {
+    return res.status("401").send("Please login first");
+  }
   const shortURL = generateRandomString();
   urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id };
   res.redirect("/urls/");
@@ -101,17 +104,11 @@ app.post("/urls/:id", (req, res) => {
 });
 
 app.get("/login", (req, res) => {
-  if (req.session.user_id) {
-    return res.redirect("/urls");
-  }
   const templateVars = { user: users[req.session.user_id] };
   res.render("urls_login", templateVars);
 });
 
 app.get("/register", (req, res) => {
-  if (req.session.user_id) {
-    return res.redirect("/urls");
-  }
   const templateVars = { user: users[req.session.user_id] };
   res.render("urls_register", templateVars);
 });
@@ -120,7 +117,7 @@ app.get("/register", (req, res) => {
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
-  let foundUser = getUserByEmail(users, email);
+  const foundUser = getUserByEmail(users, email);
 
   if (!foundUser) {
     return res.status(403).send("Email or password combination does not exist");

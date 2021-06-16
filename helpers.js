@@ -5,7 +5,7 @@ const generateRandomString = () => {
 
 // checks urlDatabase and users to find matching id number
 const urlsForUser = (urls, id) => {
-  let userURLs = {};
+  const userURLs = {};
   for (const url in urls) {
     if (urls[url].userID === id) {
       userURLs[url] = urls[url];
