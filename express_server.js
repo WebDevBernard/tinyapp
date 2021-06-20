@@ -3,25 +3,12 @@ const bcrypt = require("bcryptjs");
 const cookieSession = require("cookie-session");
 const app = express();
 const PORT = 8080; // default port 8080
-const { generateRandomString, urlsForUser, getUserByEmail } = require("./helpers");
-const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "bJ48lW" },
-  i9999: { longURL: "https://www.google.ca", userID: "0000W" }
-};
+const { generateRandomString, urlsForUser, getUserByEmail, users, urlDatabase} = require("./helpers");
 
-const users = {
-  "aJ48lW": {
-    id: "aJ48lW",
-    email: "a@b.com",
-    password: "a"
-  },
-  "bJ48lW": {
-    id: "aJ48lW",
-    email: "b@c.com",
-    password: "a"
-  }
-};
+// Quick reference to what different user id's are referring to:
+// user_id is used in req.session.user_id to look at cookies and see if user is signed in.  The cookie value is the same value as the 6 character key in users object.
+// userID is used in urlDatabase object to look if the userID belongs to a specific user
+// userId is used in POST: /register to create new users
 
 app.set("view engine", "ejs");
 
@@ -32,7 +19,7 @@ app.use(cookieSession({
   keys: ["key1", "key2"],
 }));
 
-app.get("/", (req, res) => {
+app.get("/".trim(), (req, res) => {
   if (req.session.user_id) {
     res.redirect("/urls");
   } else {
@@ -58,20 +45,19 @@ app.get("/urls/new", (req, res) => {
   }
 });
 
-// only users logged in can access short URLs
 app.get("/urls/:shortURL", (req, res) => {
   const shortURL = req.params.shortURL;
   if (!urlDatabase[shortURL]) {
-    return res.redirect("/urls");
+    return res.status("404").send("This URL does not exists");
   }
   if (!req.session.user_id) {
     return res.status("401").send("Please login first");
   }
-  if (req.session.user_id === urlDatabase[shortURL].userID) {
-    const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.session.user_id] };
-    return res.render("urls_show", templateVars);
+  if (req.session.user_id !== urlDatabase[shortURL].userID) {
+    return res.status("404").send("This URL does not belong to you");
   }
-  return res.status("404").send("This URL does not belong to you");
+  const templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.session.user_id] };
+  return res.render("urls_show", templateVars);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -82,8 +68,9 @@ app.get("/u/:shortURL", (req, res) => {
   res.redirect(longURL);
 });
 
+// checks to see if user is logged in. Only logged in users can generate short URL.
 app.post("/urls", (req, res) => {
-  if (!req.session.userID) {
+  if (!req.session.user_id) {
     return res.status("401").send("Please login first");
   }
   const shortURL = generateRandomString();
@@ -91,11 +78,11 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls/");
 });
 
-// only users can see their own urls
+//  User can update their own URLs only, users cannot modify other user's shortURL
 app.post("/urls/:id", (req, res) => {
   const shortURL = req.params.id;
   if (!req.session.user_id) {
-    return res.redirect("/login");
+    return res.status("401").send("Please login first");
   }
   if (req.session.user_id === urlDatabase[shortURL].userID) {
     urlDatabase[shortURL] = { longURL: req.body.longURL, userID: req.session.user_id };
@@ -143,7 +130,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
 });
 
 app.post("/register", (req, res) => {
-  const userID = generateRandomString();
+  const userId = generateRandomString();
   const email = req.body.email;
   const password = req.body.password;
 
@@ -153,13 +140,16 @@ app.post("/register", (req, res) => {
   if (getUserByEmail(users, email)) {
     return res.status(400).send("Please use another email address");
   }
-  const newUser = users[userID] = {
-    id: userID,
+  // creates a user object: generates random 6 characters for id key
+  const newUser = {
+    id: userId,
     email: email,
     password: bcrypt.hashSync(password, 10)
   };
-  users[userID] = newUser;
-  req.session.user_id = userID;
+  // adds newUser object using the 6 character userId as key to users object
+  users[userId] = newUser;
+  // adds an encrypted cookies
+  req.session.user_id = userId;
   res.redirect("/urls");
 });
 

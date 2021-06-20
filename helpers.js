@@ -1,3 +1,22 @@
+const urlDatabase = {
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "aJ48lW" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "bJ48lW" },
+  i9999: { longURL: "https://www.google.ca", userID: "0000W" }
+};
+
+const users = {
+  "aJ48lW": {
+    id: "aJ48lW",
+    email: "a@b.com",
+    password: "a"
+  },
+  "bJ48lW": {
+    id: "aJ48lW",
+    email: "b@c.com",
+    password: "a"
+  }
+};
+
 //Generates 6 character random string
 const generateRandomString = () => {
   return Math.random().toString(36).substring(2, 8);
@@ -23,4 +42,4 @@ const getUserByEmail = function(users, email) {
   }
 };
 
-module.exports = { generateRandomString, urlsForUser, getUserByEmail };
+module.exports = { generateRandomString, urlsForUser, getUserByEmail, users, urlDatabase };
